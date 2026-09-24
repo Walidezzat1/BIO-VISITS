@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة التوجيه الفني للأحياء - منطقة الأحمدي التعليمية</title>
+    
+    <!-- تضمين مكتبة Tailwind CSS للتصميم -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0d9488', // Teal-600
+                        secondary: '#115e59', // Teal-800
+                        accent: '#f59e0b', // Amber-500
+                        danger: '#ef4444', // Red-500
+                    },
+                    fontFamily: {
+                        'sans': ['Cairo', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- خطوط Google (Cairo) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- أيقونات FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- مكتبات النظامين (html2canvas للصور, Chart.js للرسوم, SheetJS للإكسل) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* تنسيق شريط التمرير */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* تأثيرات النموذج الموحدة */
+        .form-section { transition: all 0.3s ease; }
+        .form-section:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .upload-zone {
+            border: 2px dashed #94a3b8;
+            transition: all 0.3s ease;
+        }
+        .upload-zone.dragover {
+            border-color: #0d9488;
+            background-color: #f0fdfa;
+        }
+        
+        /* إخفاء التبويبات غير النشطة */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* تحسينات الطباعة */
+        @media print {
+            .print-hide { display: none !important; }
+            body { background-color: white; }
+            .form-section { box-shadow: none !important; border: 1px solid #e5e7eb; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <header class="bg-primary text-white shadow-lg sticky top-0 z-40 print-hide">
+        <div class="container mx-auto px-4 pt-4 pb-2">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white text-primary p-2 rounded-full h-12 w-12 flex items-center justify-center shadow-inner">
+                        <i class="fa-solid fa-leaf text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold tracking-tight">بوابة التوجيه الفني للعلوم (الأحياء)</h1>
+                        <p class="text-sm text-teal-100 hidden md:block">منطقة الأحمدي التعليمية</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                     <button onclick="window.print()" class="bg-secondary hover:bg-teal-900 transition-colors px-4 py-2 rounded-lg flex items-center gap-2 text-sm shadow-md font-semibold">
+                        <i class="fa-solid fa-print"></i>
+                        <span class="hidden sm:inline">طباعة الصفحة الحالية</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- أزرار التنقل بين التبويبات -->
+            <div class="flex gap-2 border-b border-teal-700">
+                <button onclick="switchTab('visits-view')" id="btn-visits-view" class="px-6 py-3 bg-teal-700 font-bold rounded-t-lg transition-colors flex items-center gap-2 text-sm border-b-4 border-accent">
+                    <i class="fa-solid fa-microscope"></i>
+                    نموذج الزيارات
+                </button>
+                <button onclick="switchTab('stats-view')" id="btn-stats-view" class="px-6 py-3 hover:bg-teal-700 font-semibold rounded-t-lg transition-colors flex items-center gap-2 text-sm text-teal-100 opacity-80 border-b-4 border-transparent">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    إحصائيات النتائج
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- حاوية الإشعارات المشتركة (Toasts) -->
+    <div id="toast-container" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 pointer-events-none flex flex-col gap-2 print-hide"></div>
+
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-6xl">
+        
+        <!-- ========================================== -->
+        <!-- 1. تبويب نظام الزيارات -->
+        <!-- ========================================== -->
+        <div id="visits-view" class="tab-content active">
+            <!-- إشعار خاص بالزيارات -->
+            <div id="flash-message" class="hidden mb-6 p-4 rounded shadow-md transition-all print-hide" role="alert">
+                <div class="flex items-center">
+                    <i class="text-xl ml-3"></i>
+                    <div>
+                        <p class="font-bold" id="flash-title"></p>
+                        <p class="text-sm" id="flash-desc"></p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="visitForm" class="space-y-8" onsubmit="event.preventDefault(); saveFormData();">
+                
+                <section class="bg-white rounded-xl shadow-md p-6 form-section border-t-4 border-primary">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-100 flex items-center gap-2">
+                        <i class="fa-solid fa-address-card text-primary"></i>
+                        البيانات الأساسية للزيارة
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                            <label for="schoolName" class="block text-sm font-semibold text-gray-700 mb-2">المدرسة</label>
+                            <select id="schoolName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white">
+                                <option value="">اختر المدرسة...</option>
+                                <option value="ثانوية هشام بن أمية بنين">ثانوية هشام بن أمية بنين</option>
+                                <option value="ثانوية عيسى الحمد بنين">ثانوية عيسى الحمد بنين</option>
+                                <option value="ثانوية لبنى بنت الحارث بنات">ثانوية لبنى بنت الحارث بنات</option>
+                                <option value="ثانوية هدية بنات">ثانوية هدية بنات</option>
+                                <option value="other">أخرى (يرجى التحديد في الملاحظات)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="visitDate" class="block text-sm font-semibold text-gray-700 mb-2">تاريخ الزيارة</label>
+                            <input type="date" id="visitDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label for="visitType" class="block text-sm font-semibold text-gray-700 mb-2">نوع الزيارة</label>
+                            <select id="visitType" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white">
+                                <option value="توجيهية">توجيهية</option>
+                                <option value="تقويمية">تقويمية</option>
+                                <option value="متابعة">متابعة</option>
+                                <option value="تبادل زيارات">تبادل زيارات</option>
+                            </select>
+                        </div>
+                        <div class="lg:col-span-3 border-t border-gray-100 my-2"></div>
+                        <div>
+                            <label for="teacherName" class="block text-sm font-semibold text-gray-700 mb-2">اسم المعلم</label>
+                            <input type="text" id="teacherName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label for="teacherPhone" class="block text-sm font-semibold text-gray-700 mb-2">رقم هاتف المعلم (للواتساب)</label>
+                            <input type="tel" id="teacherPhone" placeholder="مثال: 99XXXXXX" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-left print-hide" dir="ltr">
+                        </div>
+                        <div>
+                            <label for="className" class="block text-sm font-semibold text-gray-700 mb-2">الصف / الشعبة</label>
+                            <input type="text" id="className" required placeholder="مثال: 10 / 3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div class="lg:col-span-3">
+                            <label for="lessonTitle" class="block text-sm font-semibold text-gray-700 mb-2">موضوع الدرس</label>
+                            <input type="text" id="lessonTitle" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div class="lg:col-span-3 border-t border-gray-100 my-2"></div>
+                        <div>
+                            <label for="hodName" class="block text-sm font-semibold text-gray-700 mb-2">اسم رئيس القسم</label>
+                            <input type="text" id="hodName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label for="hodPhone" class="block text-sm font-semibold text-gray-700 mb-2">رقم هاتف رئيس القسم (للواتساب)</label>
+                            <input type="tel" id="hodPhone" placeholder="مثال: 99XXXXXX" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-left print-hide" dir="ltr">
+                        </div>
+                        <div class="hidden lg:block"></div>
+                        <div>
+                            <label for="principalName" class="block text-sm font-semibold text-gray-700 mb-2">اسم مدير المدرسة</label>
+                            <input type="text" id="principalName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label for="principalPhone" class="block text-sm font-semibold text-gray-700 mb-2">رقم هاتف مدير المدرسة (للواتساب)</label>
+                            <input type="tel" id="principalPhone" placeholder="مثال: 99XXXXXX" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-left print-hide" dir="ltr">
+                        </div>
+                        <div class="hidden lg:block"></div>
+                        <div class="lg:col-span-3 border-t border-gray-100 my-2"></div>
+                        <div>
+                            <label for="seniorSupervisorName" class="block text-sm font-semibold text-gray-700 mb-2">اسم الموجه الفني الأول</label>
+                            <input type="text" id="seniorSupervisorName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label for="seniorSupervisorPhone" class="block text-sm font-semibold text-gray-700 mb-2">رقم هاتف الموجه الفني الأول (للواتساب)</label>
+                            <input type="tel" id="seniorSupervisorPhone" placeholder="مثال: 99XXXXXX" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-left print-hide" dir="ltr">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-xl shadow-md p-6 form-section border-t-4 border-indigo-500">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b-2 border-gray-100 flex items-center gap-2">
+                        <i class="fa-solid fa-route text-indigo-500"></i>
+                        خطة سير الدرس
+                    </h2>
+                    <div>
+                        <label for="lessonFlow" class="sr-only">خطة سير الدرس</label>
+                        <textarea id="lessonFlow" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-y bg-gray-50 placeholder-gray-400" placeholder="اكتب هنا خطة سير الدرس والملاحظات المتعلقة بها يدوياً..."></textarea>
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-xl shadow-md p-6 form-section">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-100 flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-primary"></i>
+                        أولاً: التخطيط والإعداد للدرس (الإعداد الكتابي)
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse min-w-[600px]">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-700">
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold w-1/2">البند</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">ممتاز</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">جيد جداً</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">جيد</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">مقبول</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">ضعيف</th>
+                                </tr>
+                            </thead>
+                            <tbody id="planning-eval-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-xl shadow-md p-6 form-section">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-100 flex items-center gap-2">
+                        <i class="fa-solid fa-person-chalkboard text-primary"></i>
+                        ثانياً: التنفيذ (المادة العلمية والإدارة الصفية)
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse min-w-[600px]">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-700">
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold w-1/2">البند</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">ممتاز</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">جيد جداً</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">جيد</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">مقبول</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">ضعيف</th>
+                                </tr>
+                            </thead>
+                            <tbody id="execution-eval-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-xl shadow-md p-6 form-section">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-100 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-check text-primary"></i>
+                        ثالثاً: التقويم والمتابعة (أعمال المتعلمين)
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse min-w-[600px]">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-700">
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold w-1/2">البند</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">ممتاز</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">جيد جداً</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">جيد</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">مقبول</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">ضعيف</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assessment-eval-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-xl shadow-md p-6 form-section border-r-4 border-accent">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-100 flex items-center gap-2">
+                        <i class="fa-solid fa-flask text-accent"></i>
+                        رابعاً: الجانب العملي والمختبر (خاص بمادة الأحياء)
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse min-w-[700px]">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-700">
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold w-1/2">البند</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">ممتاز</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">جيد جداً</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">جيد</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">مقبول</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">ضعيف</th>
+                                    <th class="p-3 border-b-2 border-gray-200 font-semibold text-center text-gray-400 text-xs">غير مطبق</th>
+                                </tr>
+                            </thead>
+                            <tbody id="practical-eval-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-xl shadow-md p-6 form-section">
+                    <div class="flex flex-wrap justify-between items-center mb-6 pb-2 border-b-2 border-gray-100 gap-4">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fa-solid fa-comments text-primary"></i>
+                            خامساً: التوجيهات والتوصيات الفنية
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-500 hidden md:inline">يتم توليد الملاحظات تلقائياً عند التقييم</span>
+                            <button type="button" onclick="generateAutoNotes()" class="text-sm bg-teal-50 text-primary border border-teal-200 hover:bg-teal-100 px-4 py-2 rounded-lg transition-colors flex items-center gap-2 print-hide font-semibold shadow-sm">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                تحديث الملاحظات
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="strengths" class="block text-sm font-semibold text-gray-700 mb-2">جوانب التميز والإجادة (نقاط القوة)</label>
+                            <textarea id="strengths" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-shadow resize-none bg-gray-50 placeholder-gray-400" placeholder="ستظهر هنا نقاط القوة تلقائياً..."></textarea>
+                        </div>
+                        <div>
+                            <label for="improvements" class="block text-sm font-semibold text-gray-700 mb-2">جوانب تحتاج إلى تحسين (نقاط التطوير)</label>
+                            <textarea id="improvements" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-shadow resize-none bg-gray-50 placeholder-gray-400" placeholder="ستظهر هنا نقاط التطوير تلقائياً..."></textarea>
+                        </div>
+                        <div>
+                            <label for="recommendations" class="block text-sm font-semibold text-gray-700 mb-2">التوصيات والتكليفات</label>
+                            <textarea id="recommendations" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-shadow resize-none bg-gray-50 placeholder-gray-400" placeholder="ستظهر هنا التوصيات تلقائياً..."></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-xl shadow-md p-6 form-section mt-8 print:break-inside-avoid">
+                    <!-- التواقيع -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center border-t-2 border-dashed border-gray-200 pt-8 mt-4">
+                        <div>
+                            <p class="font-bold text-gray-700 mb-8">توقيع المعلم</p>
+                            <p class="border-b border-gray-300 w-3/4 mx-auto pb-2 min-h-[2rem] text-sm text-gray-500">(اطلعت على التوجيهات)</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-700 mb-8">توقيع رئيس القسم</p>
+                            <p class="border-b border-gray-300 w-3/4 mx-auto pb-2 min-h-[2rem]"></p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-700 mb-8">توقيع الموجه الفني</p>
+                            <p class="border-b border-gray-300 w-3/4 mx-auto pb-2 min-h-[2rem]" id="supervisor-name-display"></p>
+                        </div>
+                    </div>
+                    
+                    <div id="action-buttons-container" class="print-hide">
+                        <!-- أزرار الحفظ والمسح -->
+                        <div class="mt-8 pt-4 border-t border-gray-100 flex flex-wrap justify-between items-center gap-4">
+                            <button type="button" onclick="clearForm()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors order-2 md:order-1">
+                                مسح النموذج
+                            </button>
+                            <button type="submit" class="px-8 py-2 w-full md:w-auto bg-primary text-white rounded-lg hover:bg-secondary transition-colors font-bold shadow-md flex justify-center items-center gap-2 order-1 md:order-2">
+                                <i class="fa-solid fa-save"></i>
+                                حفظ بيانات الزيارة
+                            </button>
+                        </div>
+
+                        <!-- أزرار المشاركة عبر الواتساب -->
+                        <div class="mt-6 p-5 bg-green-50 rounded-lg border border-green-200 shadow-inner">
+                            <h3 class="text-base font-bold text-green-800 mb-4 flex items-center gap-2">
+                                <i class="fa-brands fa-whatsapp text-xl text-green-600"></i>
+                                إرسال صورة من التقرير عبر الواتساب
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                                <button type="button" onclick="sendWhatsAppAsImage('teacher')" class="bg-[#25D366] hover:bg-[#1da851] text-white px-4 py-3 rounded-lg text-sm flex justify-center items-center gap-2 transition-colors shadow-md font-bold w-full">
+                                    <i class="fa-solid fa-chalkboard-user"></i> للمعلم
+                                </button>
+                                <button type="button" onclick="sendWhatsAppAsImage('hod')" class="bg-[#25D366] hover:bg-[#1da851] text-white px-4 py-3 rounded-lg text-sm flex justify-center items-center gap-2 transition-colors shadow-md font-bold w-full">
+                                    <i class="fa-solid fa-user-tie"></i> لرئيس القسم
+                                </button>
+                                <button type="button" onclick="sendWhatsAppAsImage('principal')" class="bg-[#25D366] hover:bg-[#1da851] text-white px-4 py-3 rounded-lg text-sm flex justify-center items-center gap-2 transition-colors shadow-md font-bold w-full">
+                                    <i class="fa-solid fa-building-user"></i> لمدير المدرسة
+                                </button>
+                                <button type="button" onclick="sendWhatsAppAsImage('senior')" class="bg-[#25D366] hover:bg-[#1da851] text-white px-4 py-3 rounded-lg text-sm flex justify-center items-center gap-2 transition-colors shadow-md font-bold w-full">
+                                    <i class="fa-solid fa-user-shield"></i> للموجه الأول
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </form>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 2. تبويب إحصائيات النتائج -->
+        <!-- ========================================== -->
+        <div id="stats-view" class="tab-content">
+            
+            <!-- بطاقات الملخص الإحصائي -->
+            <section class="mb-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-high text-primary"></i>
+                    لوحة المؤشرات العامة
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+                        <div class="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-school"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold">إجمالي المدارس</p>
+                            <p class="text-2xl font-bold text-gray-800" id="stat-total-schools">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+                        <div class="bg-purple-100 text-purple-600 w-12 h-12 rounded-full flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold">إجمالي المتعلمين</p>
+                            <p class="text-2xl font-bold text-gray-800" id="stat-total-students">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+                        <div class="bg-green-100 text-green-600 w-12 h-12 rounded-full flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-percent"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold">متوسط نسبة النجاح</p>
+                            <p class="text-2xl font-bold text-gray-800" id="stat-avg-pass">0%</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+                        <div class="bg-amber-100 text-amber-600 w-12 h-12 rounded-full flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-medal"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold">المدرسة الأعلى إنجازاً</p>
+                            <p class="text-lg font-bold text-gray-800 leading-tight mt-1" id="stat-best-school">-</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم إدخال البيانات -->
+            <section class="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6 print-hide">
+                <div class="bg-white rounded-xl shadow-md p-6 lg:col-span-2 border-t-4 border-primary">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-keyboard text-primary"></i>
+                        إضافة بيانات مدرسة (يدوياً)
+                    </h3>
+                    <form id="addSchoolForm" class="grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="event.preventDefault(); addSchoolManually();">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">اسم المدرسة</label>
+                            <input type="text" id="input-school-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">عدد المتقدمين</label>
+                            <input type="number" id="input-total" min="1" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">عدد الناجحين</label>
+                            <input type="number" id="input-passed" min="0" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">عدد الفائقين (امتياز)</label>
+                            <input type="number" id="input-excellent" min="0" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md">
+                                <i class="fa-solid fa-plus"></i> إضافة للسجل
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-green-500">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel text-green-500"></i>
+                        استيراد من Excel
+                    </h3>
+                    <div class="text-sm text-gray-600 mb-4">
+                        الأعمدة: (المدرسة، المتقدمين، الناجحين، الفائقين).
+                    </div>
+                    
+                    <div id="drop-zone" class="upload-zone rounded-lg p-6 text-center cursor-pointer bg-gray-50 hover:bg-gray-100 flex flex-col items-center justify-center h-24" onclick="document.getElementById('excel-file').click()">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-gray-400 mb-2"></i>
+                        <p class="text-sm font-semibold text-gray-600">اسحب الملف أو اضغط للرفع</p>
+                        <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="loadSampleData()" class="text-xs text-primary underline hover:text-secondary">
+                            تحميل بيانات تجريبية (Demo)
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">مقارنة نسب النجاح بين المدارس</h3>
+                    <div class="relative h-72 w-full">
+                        <canvas id="passRateChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">التوزيع العام لنتائج المنطقة</h3>
+                    <div class="relative h-72 w-full flex justify-center">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center print:bg-white print:border-none">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-primary"></i>
+                        تفاصيل نتائج المدارس
+                    </h2>
+                    <button onclick="clearAllData()" class="text-danger hover:text-red-700 text-sm font-semibold flex items-center gap-1 print-hide">
+                        <i class="fa-solid fa-trash-can"></i> مسح الكل
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right border-collapse min-w-[700px]">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-700">
+                                <th class="p-3 border-b-2 border-gray-200 font-semibold text-center w-12 print-hide">#</th>
+                                <th class="p-3 border-b-2 border-gray-200 font-semibold">اسم المدرسة</th>
+                                <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">المتقدمين</th>
+                                <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">الناجحين</th>
+                                <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">الفائقين</th>
+                                <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">نسبة النجاح</th>
+                                <th class="p-3 border-b-2 border-gray-200 font-semibold text-center">نسبة التفوق</th>
+                                <th class="p-3 border-b-2 border-gray-200 font-semibold text-center print-hide">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schools-table-body">
+                            <tr id="empty-state">
+                                <td colspan="8" class="p-8 text-center text-gray-500">
+                                    <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-300 block"></i>
+                                    لا توجد بيانات مسجلة حالياً. قم بإضافة المدارس يدوياً أو ارفع ملف Excel.
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot id="table-footer" class="bg-gray-50 font-bold hidden">
+                            <tr>
+                                <td colspan="2" class="p-3 border-t-2 border-gray-300 text-left">المجموع الكلي:</td>
+                                <td class="p-3 border-t-2 border-gray-300 text-center" id="foot-total">0</td>
+                                <td class="p-3 border-t-2 border-gray-300 text-center" id="foot-passed">0</td>
+                                <td class="p-3 border-t-2 border-gray-300 text-center" id="foot-excellent">0</td>
+                                <td class="p-3 border-t-2 border-gray-300 text-center text-primary" id="foot-pass-rate">0%</td>
+                                <td class="p-3 border-t-2 border-gray-300 text-center text-accent" id="foot-exc-rate">0%</td>
+                                <td class="border-t-2 border-gray-300 print-hide"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-gray-300 py-6 text-center mt-auto print-hide">
+        <p class="text-sm">بوابة التوجيه الفني الموحدة - منطقة الأحمدي التعليمية &copy; <span id="currentYear"></span></p>
+    </footer>
+
+    <script>
+        // ==========================================
+        // النظام المشترك (Common Logic)
+        // ==========================================
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        function switchTab(tabId) {
+            // إخفاء المحتوى
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            // تعديل شكل الأزرار
+            const btnVisits = document.getElementById('btn-visits-view');
+            const btnStats = document.getElementById('btn-stats-view');
+
+            if(tabId === 'visits-view') {
+                btnVisits.className = "px-6 py-3 bg-teal-700 font-bold rounded-t-lg transition-colors flex items-center gap-2 text-sm border-b-4 border-accent";
+                btnStats.className = "px-6 py-3 hover:bg-teal-700 font-semibold rounded-t-lg transition-colors flex items-center gap-2 text-sm text-teal-100 opacity-80 border-b-4 border-transparent cursor-pointer";
+            } else {
+                btnStats.className = "px-6 py-3 bg-teal-700 font-bold rounded-t-lg transition-colors flex items-center gap-2 text-sm border-b-4 border-accent";
+                btnVisits.className = "px-6 py-3 hover:bg-teal-700 font-semibold rounded-t-lg transition-colors flex items-center gap-2 text-sm text-teal-100 opacity-80 border-b-4 border-transparent cursor-pointer";
+                // إعادة رسم الشارتس إذا كانت مخفية وتفعلت
+                updateCharts();
+            }
+        }
+
+        function showGlobalToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-green-100 border-green-500 text-green-800' : 'bg-red-100 border-red-500 text-red-800';
+            const icon = type === 'success' ? 'fa-circle-check text-green-500' : 'fa-circle-exclamation text-red-500';
+            
+            toast.className = `flex items-center gap-3 w-full p-4 rounded-lg shadow-lg border-r-4 ${bgColor} transition-opacity duration-300 opacity-0 pointer-events-auto mt-2`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-xl"></i>
+                <span class="font-semibold text-sm">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.remove('opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ==========================================
+        // 1. نظام الزيارات (Visits Logic)
+        // ==========================================
+        document.getElementById('visitDate').valueAsDate = new Date();
+
+        const evaluationCriteria = {
+            planning: [
+                { id: 'p1', text: 'وضوح الأهداف السلوكية وصياغتها وتنوعها (معرفي، وجداني، مهاري)' },
+                { id: 'p2', text: 'صياغة التمهيد المناسب المشوق والمثير للانتباه' },
+                { id: 'p3', text: 'تحديد الوسائل والأدوات والتقنيات اللازمة للدرس' },
+                { id: 'p4', text: 'توزيع الوقت بشكل مناسب على مراحل الدرس (تمهيد، عرض، تقويم)' },
+                { id: 'p5', text: 'تنظيم وتدوين التحضير بشكل علمي ومنسق' }
+            ],
+            execution: [
+                { id: 'e1', text: 'التمكن من المادة العلمية وخلوها من الأخطاء' },
+                { id: 'e2', text: 'ربط المادة العلمية بواقع الحياة وتقديم أمثلة حية' },
+                { id: 'e3', text: 'استخدام استراتيجيات تدريس متنوعة ومناسبة (تعلم نشط)' },
+                { id: 'e4', text: 'إدارة الصف بفعالية وتوفير بيئة تعليمية آمنة ومحفزة' },
+                { id: 'e5', text: 'توظيف الوسائل التعليمية والتقنيات الحديثة بكفاءة' },
+                { id: 'e6', text: 'مراعاة الفروق الفردية بين المتعلمين' },
+                { id: 'e7', text: 'سلامة اللغة ووضوح الصوت والتعبير الحركي' }
+            ],
+            assessment: [
+                { id: 'a1', text: 'تنوع أساليب التقويم (تكويني، ختامي)' },
+                { id: 'a2', text: 'طرح أسئلة تثير التفكير بمستويات معرفية مختلفة' },
+                { id: 'a3', text: 'متابعة أعمال الطلاب (الدفاتر، أوراق العمل) وتصحيحها' },
+                { id: 'a4', text: 'تقديم التغذية الراجعة المناسبة للمتعلمين' }
+            ],
+            practical: [
+                { id: 'l1', text: 'تجهيز الأدوات والمواد والأجهزة قبل بدء الحصة العملي' },
+                { id: 'l2', text: 'التأكيد على إجراءات الأمن والسلامة في المختبر' },
+                { id: 'l3', text: 'إشراك الطلاب في إجراء التجارب (عملي، مجاميع)' },
+                { id: 'l4', text: 'توجيه الطلاب لتدوين الملاحظات والاستنتاجات بدقة' },
+                { id: 'l5', text: 'استخدام النماذج والشرائح المجهرية بشكل صحيح' }
+            ]
+        };
+
+        function generateEvalRow(item, sectionId, includeNA = false) {
+            const options = ['5', '4', '3', '2', '1'];
+            let tds = '';
+            
+            options.forEach(val => {
+                tds += `
+                    <td class="p-2 border-b border-gray-100 text-center">
+                        <label class="cursor-pointer flex justify-center w-full h-full p-2 hover:bg-teal-50 rounded">
+                            <input type="radio" name="${item.id}" value="${val}" class="w-4 h-4 text-primary focus:ring-primary print:accent-primary" required>
+                        </label>
+                    </td>
+                `;
+            });
+
+            if (includeNA) {
+                tds += `
+                    <td class="p-2 border-b border-gray-100 text-center bg-gray-50 print:bg-transparent">
+                        <label class="cursor-pointer flex justify-center w-full h-full p-2 hover:bg-gray-200 rounded tooltip" title="لا ينطبق">
+                            <input type="radio" name="${item.id}" value="0" class="w-4 h-4 text-gray-500 focus:ring-gray-400">
+                        </label>
+                    </td>
+                `;
+            }
+
+            return `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-3 border-b border-gray-100 text-sm md:text-base pr-4 border-r-2 border-transparent hover:border-primary">${item.text}</td>
+                    ${tds}
+                </tr>
+            `;
+        }
+
+        function populateTables() {
+            document.getElementById('planning-eval-body').innerHTML = evaluationCriteria.planning.map(item => generateEvalRow(item, 'planning')).join('');
+            document.getElementById('execution-eval-body').innerHTML = evaluationCriteria.execution.map(item => generateEvalRow(item, 'execution')).join('');
+            document.getElementById('assessment-eval-body').innerHTML = evaluationCriteria.assessment.map(item => generateEvalRow(item, 'assessment')).join('');
+            document.getElementById('practical-eval-body').innerHTML = evaluationCriteria.practical.map(item => generateEvalRow(item, 'practical', true)).join('');
+        }
+
+        document.getElementById('visitForm').addEventListener('change', function(e) {
+            if (e.target.type === 'radio') generateAutoNotes();
+        });
+
+        function generateAutoNotes() {
+            let strengths = [], improvements = [], recommendations = [];
+
+            for (const category in evaluationCriteria) {
+                evaluationCriteria[category].forEach(item => {
+                    const radio = document.querySelector(`input[name="${item.id}"]:checked`);
+                    if (radio) {
+                        const val = parseInt(radio.value);
+                        if (val === 5 || val === 4) strengths.push('• ' + item.text);
+                        else if (val === 2 || val === 1) {
+                            improvements.push('• ' + item.text);
+                            recommendations.push('• ضرورة الاهتمام بـ: ' + item.text);
+                        } 
+                        else if (val === 3) recommendations.push('• العمل على تطوير: ' + item.text);
+                    }
+                });
+            }
+
+            const sElem = document.getElementById('strengths');
+            const iElem = document.getElementById('improvements');
+            const rElem = document.getElementById('recommendations');
+
+            sElem.value = strengths.length > 0 ? strengths.join('\n') : '';
+            iElem.value = improvements.length > 0 ? improvements.join('\n') : '';
+            rElem.value = recommendations.length > 0 ? recommendations.join('\n') : '';
+
+            [sElem, iElem, rElem].forEach(el => {
+                el.style.height = 'auto'; 
+                if(el.value !== '') el.style.height = (el.scrollHeight + 5) + 'px'; 
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+             let supName = localStorage.getItem('supervisorName') || "الموجه الفني للأحياء";
+             document.getElementById('supervisor-name-display').textContent = supName;
+        });
+
+        function showFlashMessage(title, message, isError = false) {
+            const flash = document.getElementById('flash-message');
+            const titleEl = document.getElementById('flash-title');
+            const descEl = document.getElementById('flash-desc');
+            const icon = flash.querySelector('i');
+            
+            flash.className = 'mb-6 p-4 rounded shadow-md transition-all print-hide';
+            icon.className = 'text-xl ml-3';
+            
+            if (isError) {
+                flash.classList.add('bg-red-100', 'border-l-4', 'border-red-500', 'text-red-700');
+                icon.classList.add('fa-solid', 'fa-circle-xmark');
+            } else {
+                flash.classList.add('bg-green-100', 'border-r-4', 'border-green-500', 'text-green-700');
+                icon.classList.add('fa-solid', 'fa-circle-check');
+            }
+
+            titleEl.textContent = title;
+            descEl.textContent = message;
+            flash.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            setTimeout(() => flash.classList.add('hidden'), 5000);
+        }
+
+        function saveFormData() {
+            if (document.getElementById('visitForm').checkValidity()) {
+                showFlashMessage('تم الحفظ بنجاح!', 'تم حفظ بيانات الزيارة وتوثيقها. يمكنك الآن إرسالها أو طباعتها.');
+                showGlobalToast('تم الحفظ بنجاح');
+            }
+        }
+
+        function clearForm() {
+            if(confirm('هل أنت متأكد من مسح جميع البيانات للبدء بزيارة جديدة؟')) {
+                document.getElementById('visitForm').reset();
+                document.getElementById('visitDate').valueAsDate = new Date();
+                generateAutoNotes();
+            }
+        }
+
+        async function sendWhatsAppAsImage(role) {
+            const phoneIds = {
+                'teacher': 'teacherPhone',
+                'hod': 'hodPhone',
+                'principal': 'principalPhone',
+                'senior': 'seniorSupervisorPhone'
+            };
+
+            const phoneInput = document.getElementById(phoneIds[role]).value.replace(/\s+/g, '');
+            if (!phoneInput) {
+                showFlashMessage('تنبيه هام', 'يرجى إدخال رقم الهاتف للشخص المطلوب أولاً لتتمكن من الإرسال.', true);
+                return;
+            }
+
+            let formattedPhone = phoneInput.length === 8 ? '965' + phoneInput : phoneInput;
+            showFlashMessage('جاري التجهيز...', 'يتم الآن تحضير الصورة، يرجى الانتظار...');
+
+            const actionContainer = document.getElementById('action-buttons-container');
+            actionContainer.style.display = 'none';
+
+            try {
+                // نصور فقط التبويب الخاص بالزيارات لتجنب تصوير الإحصائيات إذا كانت مخفية
+                const targetArea = document.getElementById('visits-view');
+                const canvas = await html2canvas(targetArea, {
+                    scale: 2,
+                    backgroundColor: '#ffffff', // خلفية بيضاء للصورة
+                    useCORS: true
+                });
+
+                actionContainer.style.display = 'block';
+
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], "visit_report.png", { type: "image/png" });
+
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: 'تقرير زيارة توجيهية',
+                                text: 'مرفق صورة لتقرير الزيارة التوجيهية'
+                            });
+                        } catch (e) { downloadAndOpenWhatsApp(blob, formattedPhone); }
+                    } else {
+                        downloadAndOpenWhatsApp(blob, formattedPhone);
+                    }
+                }, 'image/png');
+
+            } catch (error) {
+                actionContainer.style.display = 'block';
+                showFlashMessage('خطأ', 'حدث خطأ أثناء إنشاء الصورة.', true);
+            }
+        }
+
+        function downloadAndOpenWhatsApp(blob, phone) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'تقرير_الزيارة.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            setTimeout(() => {
+                const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent("مرحباً، تم تحميل صورة التقرير على جهازك. يرجى إرفاق الصورة التي تم تحميلها 📎")}`;
+                window.open(waUrl, '_blank');
+            }, 1000);
+        }
+
+        // ==========================================
+        // 2. نظام الإحصائيات (Statistics Logic)
+        // ==========================================
+        let schoolsData = [];
+        let passRateChartInstance = null;
+        let distributionChartInstance = null;
+
+        function addSchoolManually() {
+            const name = document.getElementById('input-school-name').value;
+            const total = parseInt(document.getElementById('input-total').value);
+            const passed = parseInt(document.getElementById('input-passed').value);
+            const excellent = parseInt(document.getElementById('input-excellent').value);
+
+            if (passed > total) return showGlobalToast('عدد الناجحين أكبر من المتقدمين!', 'error');
+            if (excellent > passed) return showGlobalToast('عدد الفائقين أكبر من الناجحين!', 'error');
+
+            schoolsData.push({ id: Date.now().toString(), name, total, passed, excellent, failed: total - passed });
+            
+            document.getElementById('addSchoolForm').reset();
+            updateUI();
+            showGlobalToast('تمت إضافة المدرسة بنجاح');
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+                    
+                    let importedCount = 0;
+                    for (let i = 1; i < json.length; i++) {
+                        const row = json[i];
+                        if (row && row.length >= 4 && row[0]) {
+                            const name = row[0], total = parseInt(row[1])||0, passed = parseInt(row[2])||0, excellent = parseInt(row[3])||0;
+                            if (total > 0 && passed <= total && excellent <= passed) {
+                                schoolsData.push({ id: Date.now()+i, name, total, passed, excellent, failed: total - passed });
+                                importedCount++;
+                            }
+                        }
+                    }
+                    
+                    if (importedCount > 0) { updateUI(); showGlobalToast(`تم استيراد ${importedCount} مدرسة بنجاح`); }
+                    else showGlobalToast('لم يتم العثور على بيانات صالحة.', 'error');
+                } catch (error) { showGlobalToast('حدث خطأ أثناء قراءة الملف.', 'error'); }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = '';
+        }
+
+        const dropZone = document.getElementById('drop-zone');
+        if(dropZone){
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+            dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault(); dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    document.getElementById('excel-file').files = e.dataTransfer.files;
+                    handleFileUpload({ target: { files: e.dataTransfer.files } });
+                }
+            });
+        }
+
+        function deleteSchool(id) {
+            if(confirm('تأكيد حذف المدرسة؟')) {
+                schoolsData = schoolsData.filter(s => s.id !== id);
+                updateUI();
+                showGlobalToast('تم الحذف');
+            }
+        }
+
+        function clearAllData() {
+            if (schoolsData.length > 0 && confirm('سيتم مسح جميع الإحصائيات. متأكد؟')) {
+                schoolsData = []; updateUI(); showGlobalToast('تم تصفير السجل');
+            }
+        }
+
+        function updateUI() {
+            updateDashboard();
+            updateTable();
+            updateCharts();
+        }
+
+        function updateDashboard() {
+            if (schoolsData.length === 0) {
+                document.getElementById('stat-total-schools').textContent = '0';
+                document.getElementById('stat-total-students').textContent = '0';
+                document.getElementById('stat-avg-pass').textContent = '0%';
+                document.getElementById('stat-best-school').textContent = '-';
+                return;
+            }
+
+            let sumStudents = 0, sumPassed = 0, bestSchool = null, highestRate = -1;
+            schoolsData.forEach(school => {
+                sumStudents += school.total; sumPassed += school.passed;
+                const rate = (school.passed / school.total) * 100;
+                if (rate > highestRate) { highestRate = rate; bestSchool = school.name; } 
+                else if (rate === highestRate) {
+                    const curBest = schoolsData.find(s => s.name === bestSchool);
+                    if(curBest && (school.excellent/school.total) > (curBest.excellent/curBest.total)) bestSchool = school.name;
+                }
+            });
+
+            document.getElementById('stat-total-schools').textContent = schoolsData.length;
+            document.getElementById('stat-total-students').textContent = sumStudents.toLocaleString();
+            document.getElementById('stat-avg-pass').textContent = ((sumPassed/sumStudents)*100).toFixed(1) + '%';
+            document.getElementById('stat-best-school').textContent = bestSchool || '-';
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('schools-table-body'), tfoot = document.getElementById('table-footer');
+            if (schoolsData.length === 0) {
+                tbody.innerHTML = `<tr id="empty-state"><td colspan="8" class="p-8 text-center text-gray-500"><i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-300 block"></i>لا توجد بيانات.</td></tr>`;
+                tfoot.classList.add('hidden'); return;
+            }
+
+            tbody.innerHTML = '';
+            let tTotal = 0, tPassed = 0, tExcellent = 0;
+
+            schoolsData.forEach((school, i) => {
+                tTotal += school.total; tPassed += school.passed; tExcellent += school.excellent;
+                const pRate = ((school.passed/school.total)*100).toFixed(1), eRate = ((school.excellent/school.total)*100).toFixed(1);
+                let cls = pRate < 50 ? 'text-red-600' : pRate < 70 ? 'text-amber-500' : 'text-green-600';
+                
+                tbody.innerHTML += `
+                    <tr class="hover:bg-teal-50 border-b border-gray-100">
+                        <td class="p-3 text-center text-gray-500 print-hide">${i + 1}</td>
+                        <td class="p-3 font-semibold text-gray-800">${school.name}</td>
+                        <td class="p-3 text-center">${school.total}</td><td class="p-3 text-center">${school.passed}</td>
+                        <td class="p-3 text-center">${school.excellent}</td>
+                        <td class="p-3 text-center font-bold ${cls}" dir="ltr">${pRate}%</td>
+                        <td class="p-3 text-center font-semibold text-blue-600" dir="ltr">${eRate}%</td>
+                        <td class="p-3 text-center print-hide"><button onclick="deleteSchool('${school.id}')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>`;
+            });
+
+            document.getElementById('foot-total').textContent = tTotal; document.getElementById('foot-passed').textContent = tPassed;
+            document.getElementById('foot-excellent').textContent = tExcellent;
+            document.getElementById('foot-pass-rate').textContent = tTotal > 0 ? ((tPassed/tTotal)*100).toFixed(1) + '%' : '0%';
+            document.getElementById('foot-exc-rate').textContent = tTotal > 0 ? ((tExcellent/tTotal)*100).toFixed(1) + '%' : '0%';
+            tfoot.classList.remove('hidden');
+        }
+
+        function updateCharts() {
+            // تجنب رسم الشارت إذا كان التبويب مخفي (Chart.js تحتاج لأبعاد حقيقية)
+            if (document.getElementById('stats-view').style.display === 'none' && !document.getElementById('stats-view').classList.contains('active')) return;
+            
+            if (schoolsData.length === 0) {
+                if (passRateChartInstance) passRateChartInstance.destroy();
+                if (distributionChartInstance) distributionChartInstance.destroy();
+                return;
+            }
+
+            const labels = schoolsData.map(s => s.name), passRates = schoolsData.map(s => ((s.passed / s.total) * 100).toFixed(1));
+            let tPassed = 0, tFailed = 0, tExcellent = 0;
+            schoolsData.forEach(s => { tPassed += (s.passed - s.excellent); tFailed += s.failed; tExcellent += s.excellent; });
+
+            if (passRateChartInstance) passRateChartInstance.destroy();
+            passRateChartInstance = new Chart(document.getElementById('passRateChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'نسبة النجاح (%)', data: passRates, backgroundColor: '#0d9488', borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+
+            if (distributionChartInstance) distributionChartInstance.destroy();
+            distributionChartInstance = new Chart(document.getElementById('distributionChart').getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: ['فائقين', 'ناجحين', 'راسبين'], datasets: [{ data: [tExcellent, tPassed, tFailed], backgroundColor: ['#f59e0b', '#5eead4', '#ef4444'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Cairo' } } } } }
+            });
+        }
+
+        function loadSampleData() {
+            schoolsData = [
+                { id: '1', name: 'ثانوية هشام بن أمية', total: 120, passed: 110, excellent: 45, failed: 10 },
+                { id: '2', name: 'ثانوية عيسى الحمد', total: 85, passed: 70, excellent: 20, failed: 15 },
+                { id: '3', name: 'ثانوية لبنى بنت الحارث', total: 150, passed: 145, excellent: 80, failed: 5 },
+                { id: '4', name: 'ثانوية هدية', total: 95, passed: 90, excellent: 35, failed: 5 }
+            ];
+            updateUI(); showGlobalToast('تم تحميل البيانات التجريبية');
+        }
+
+        // تهيئة النظام عند التحميل
+        populateTables();
+        updateUI();
+
+    </script>
+</body>
+</html>
